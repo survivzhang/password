@@ -1,9 +1,11 @@
 import express, { Request, Response } from "express";
 import { PasswordHasher } from "./utils/crypto";
+import jwt from "jsonwebtoken";
 
 const app = express();
 const PORT = 3000;
 const users: any[] = [];
+const JWT_SECRET = "this-is-the-secure-key-for-test";
 
 app.use(express.json());
 
@@ -66,6 +68,52 @@ app.post("/register", async (req: Request, res: Response) => {
       id: newUser.id,
       email,
       createdAt: newUser.createdAt,
+    },
+  });
+});
+
+app.post("/login", async (req: Request, res: Response) => {
+  const { email, masterPassword } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !masterPassword) {
+    return res.status(400).json({ error: "Please provide full information" });
+  }
+
+  if (typeof email !== "string" || typeof masterPassword !== "string") {
+    return res.status(400).json({ error: "Type error" });
+  }
+
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  const user = users.find((u) => u.email === email);
+  if (!user) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const isVerified = await PasswordHasher.verify(
+    masterPassword,
+    user.masterPasswordHash,
+  );
+
+  if (!isVerified) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, userEmail: user.email },
+    JWT_SECRET,
+    { expiresIn: "24h" },
+  );
+
+  // TODO: Add password validation and registration logic
+  res.status(200).json({
+    message: "login successful",
+    token: token,
+    user: {
+      id: user.id,
+      email: user.email,
     },
   });
 });
