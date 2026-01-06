@@ -1,20 +1,35 @@
 import express, { Request, Response, NextFunction } from "express";
-import { PasswordHasher } from "./utils/crypto";
 import jwt from "jsonwebtoken";
+import { PasswordHasher } from "./utils/crypto";
 
 const app = express();
 const PORT = 3000;
-const users: any[] = [];
 const JWT_SECRET = "this-is-the-secure-key-for-test";
+const users: any[] = [];
 
 app.use(express.json());
 
+// ============ Middleware ============
+
+function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET as string);
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    res.status(403).json({ error: "Invalid token" });
+  }
+}
+
+// ============ Public Routes ============
+
 app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok", message: "SecureVault API is running" });
-});
-
-app.listen(PORT, () => {
-  console.log(`🔐 SecureVault API running on http://localhost:${PORT}`);
 });
 
 app.post("/echo", (req: Request, res: Response) => {
@@ -27,9 +42,18 @@ app.post("/echo", (req: Request, res: Response) => {
   });
 });
 
+app.get("/public", (req: Request, res: Response) => {
+  res.json({
+    message: "This is public, anyone can access",
+  });
+});
+
+// ============ Auth Routes ============
+
 app.post("/register", async (req: Request, res: Response) => {
   const { email, masterPassword } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   if (!email || !masterPassword) {
     return res.status(400).json({ error: "Please provide full information" });
   }
@@ -59,9 +83,9 @@ app.post("/register", async (req: Request, res: Response) => {
     masterPasswordHash: hasherPassword,
     createdAt: new Date(),
   };
-  console.log("newUser.id:", newUser.id);
+
   users.push(newUser);
-  // TODO: Add password validation and registration logic
+
   res.status(201).json({
     message: "Registration successful",
     user: {
@@ -75,6 +99,7 @@ app.post("/register", async (req: Request, res: Response) => {
 app.post("/login", async (req: Request, res: Response) => {
   const { email, masterPassword } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   if (!email || !masterPassword) {
     return res.status(400).json({ error: "Please provide full information" });
   }
@@ -107,9 +132,8 @@ app.post("/login", async (req: Request, res: Response) => {
     { expiresIn: "24h" },
   );
 
-  // TODO: Add password validation and registration logic
   res.status(200).json({
-    message: "login successful",
+    message: "Login successful",
     token: token,
     user: {
       id: user.id,
@@ -118,31 +142,8 @@ app.post("/login", async (req: Request, res: Response) => {
   });
 });
 
-function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  try {
-    const authHeader = req.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer")) {
-      return res.status(401).json({ error: "No token provided" });
-    }
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET as string);
-    (req as any).user = decoded;
-    next();
-  } catch (error) {
-    res.status(403).json({ error: "Invalid token" });
-  }
-}
+// ============ Protected Routes ============
 
-// ============ 测试路由 ============
-
-// 公共路由（不需要认证）
-app.get("/public", (req: Request, res: Response) => {
-  res.json({
-    message: "This is public, anyone can access",
-  });
-});
-
-// 受保护的路由（需要认证）
 app.get("/protected", authenticateToken, (req: Request, res: Response) => {
   const user = (req as any).user;
 
@@ -155,7 +156,6 @@ app.get("/protected", authenticateToken, (req: Request, res: Response) => {
   });
 });
 
-// 获取当前用户信息
 app.get("/me", authenticateToken, (req: Request, res: Response) => {
   const decoded = (req as any).user;
   const user = users.find((u) => u.id === decoded.userId);
@@ -169,4 +169,10 @@ app.get("/me", authenticateToken, (req: Request, res: Response) => {
     email: user.email,
     createdAt: user.createdAt,
   });
+});
+
+// ============ Server Start ============
+
+app.listen(PORT, () => {
+  console.log(`🔐 SecureVault API running on http://localhost:${PORT}`);
 });
