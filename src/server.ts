@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { PasswordHasher } from "./utils/crypto";
 import jwt from "jsonwebtoken";
 
@@ -115,5 +115,58 @@ app.post("/login", async (req: Request, res: Response) => {
       id: user.id,
       email: user.email,
     },
+  });
+});
+
+function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const authHeader = req.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET as string);
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    res.status(403).json({ error: "Invalid token" });
+  }
+}
+
+// ============ 测试路由 ============
+
+// 公共路由（不需要认证）
+app.get("/public", (req: Request, res: Response) => {
+  res.json({
+    message: "This is public, anyone can access",
+  });
+});
+
+// 受保护的路由（需要认证）
+app.get("/protected", authenticateToken, (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  res.json({
+    message: "You are authenticated!",
+    user: {
+      userId: user.userId,
+      email: user.email,
+    },
+  });
+});
+
+// 获取当前用户信息
+app.get("/me", authenticateToken, (req: Request, res: Response) => {
+  const decoded = (req as any).user;
+  const user = users.find((u) => u.id === decoded.userId);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  res.json({
+    id: user.id,
+    email: user.email,
+    createdAt: user.createdAt,
   });
 });
