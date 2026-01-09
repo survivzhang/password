@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { PasswordHasher } from "./utils/crypto";
+import pool from "./db";
 
 const app = express();
 const PORT = 3000;
@@ -172,6 +173,13 @@ app.get("/me", authenticateToken, (req: Request, res: Response) => {
 });
 
 // ============ Server Start ============
+pool.query("SELECT NOW()", (err, res) => {
+  if (err) {
+    console.error("Connection failed:", err);
+  } else {
+    console.log("Connected Time:", res.rows[0].now);
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`🔐 SecureVault API running on http://localhost:${PORT}`);
