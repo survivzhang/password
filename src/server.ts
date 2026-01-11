@@ -6,11 +6,9 @@ import pool from "./db";
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = "this-is-the-secure-key-for-test";
-const users: any[] = [];
-
-app.use(express.json());
 
 // ============ Middleware ============
+app.use(express.json());
 
 function authenticateToken(req: Request, res: Response, next: NextFunction) {
   try {
@@ -71,21 +69,23 @@ app.post("/register", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Minimum 12 length masterPassword" });
   }
 
-  const existingUser = users.find((u) => u.email === email);
-  if (existingUser) {
-    return res.status(400).json({ error: "User existed" });
+  const existingUser = await pool.query(
+    "SELECT * FROM users WHERE email = $1",
+    [email],
+  );
+
+  if (existingUser.rows[0]) {
+    return res.status(409).json({ error: "User existed" });
   }
 
   const hasherPassword = await PasswordHasher.hash(masterPassword);
 
-  const newUser = {
-    id: Date.now().toString(),
-    email,
-    masterPasswordHash: hasherPassword,
-    createdAt: new Date(),
-  };
+  const result = await pool.query(
+    "INSERT INTO users (email, master_password_hash) VALUES ($1, $2) RETURNING *",
+    [email, hasherPassword],
+  );
 
-  users.push(newUser);
+  const newUser = result.rows[0];
 
   res.status(201).json({
     message: "Registration successful",
@@ -113,14 +113,22 @@ app.post("/login", async (req: Request, res: Response) => {
     return res.status(400).json({ error: "Invalid email format" });
   }
 
-  const user = users.find((u) => u.email === email);
+  const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+    email,
+  ]);
+
+  const user = result.rows[0];
+
+  if (!user) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
   if (!user) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
   const isVerified = await PasswordHasher.verify(
     masterPassword,
-    user.masterPasswordHash,
+    user.master_password_hash,
   );
 
   if (!isVerified) {
@@ -157,10 +165,16 @@ app.get("/protected", authenticateToken, (req: Request, res: Response) => {
   });
 });
 
-app.get("/me", authenticateToken, (req: Request, res: Response) => {
+app.get("/me", authenticateToken, async (req: Request, res: Response) => {
   const decoded = (req as any).user;
-  const user = users.find((u) => u.id === decoded.userId);
+  const result = await pool.query("SELECT * FROM users WHERE id = $1", [
+    decoded.userId,
+  ]);
+  const user = result.rows[0];
 
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
   if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
