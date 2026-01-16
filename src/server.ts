@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { PasswordHasher } from "./utils/crypto";
 import pool from "./db";
+import { deriveKey, encrypt, decrypt } from "./utils/encryption";
 
 const app = express();
 const PORT = 3000;
@@ -134,9 +135,14 @@ app.post("/login", async (req: Request, res: Response) => {
   if (!isVerified) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
+  const encryptionKey = deriveKey(masterPassword, email);
 
   const token = jwt.sign(
-    { userId: user.id, userEmail: user.email },
+    {
+      userId: user.id,
+      userEmail: user.email,
+      encryptionKey: encryptionKey.toString("hex"),
+    },
     JWT_SECRET,
     { expiresIn: "24h" },
   );
@@ -150,6 +156,54 @@ app.post("/login", async (req: Request, res: Response) => {
     },
   });
 });
+
+app.post(
+  "/passwords",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    console.log(req);
+    const decoded = (req as any).user;
+    const encryptionKeyHex = decoded.encryptionKey;
+    const userId = decoded.userId;
+    const encryptionKey = Buffer.from(encryptionKeyHex, "hex");
+    console.log(req.body);
+    const { website, username, password, notes } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+    const { encrypted, iv, authTag } = encrypt(password, encryptionKey);
+    const result = await pool.query(
+      `
+      INSERT INTO vault_items(
+      user_id,
+      website,
+      username,
+      encrypted_password,
+      iv,
+      auth_tag,
+      notes
+      )VALUES($1,$2,$3,$4,$5,$6,$7)
+      RETURNING *
+      `,
+      [userId, website, username, encrypted, iv, authTag, notes],
+    );
+    const newItem = result.rows[0];
+    return res.status(201).json({
+      message: "Password saved successfully",
+      passwordItem: {
+        id: newItem.id,
+        website: newItem.website,
+        username: newItem.username,
+        notes: newItem.notes,
+        createdAt: newItem.created_at,
+      },
+    });
+  },
+);
+// app.get("/passwords");
+// app.get("/password");
+// app.put("/password");
+// app.delete("/password");
 
 // ============ Protected Routes ============
 

@@ -23,8 +23,10 @@ async function setupDatabase() {
         username VARCHAR(255),
         encrypted_password TEXT NOT NULL,
         iv VARCHAR(32) NOT NULL,
+        auth_tag VARCHAR(32) NOT NULL,
         notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log("✅ Vault items table created");
