@@ -123,9 +123,6 @@ app.post("/login", async (req: Request, res: Response) => {
   if (!user) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
-  if (!user) {
-    return res.status(401).json({ error: "Invalid credentials" });
-  }
 
   const isVerified = await PasswordHasher.verify(
     masterPassword,
@@ -200,10 +197,163 @@ app.post(
     });
   },
 );
-// app.get("/passwords");
-// app.get("/password");
-// app.put("/password");
-// app.delete("/password");
+
+app.get(
+  "/passwords",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const decoded = (req as any).user;
+    const userId = decoded.userId;
+    const result = await pool.query(
+      `SELECT * FROM vault_items 
+      WHERE user_id = $1
+      ORDER BY created_at
+      DESC
+      `,
+      [userId],
+    );
+    const passwords = result.rows.map((item) => ({
+      id: item.id,
+      website: item.website,
+      username: item.username,
+      notes: item.notes,
+      createdAt: item.created_at,
+    }));
+    res.json({ passwords });
+  },
+);
+
+app.get(
+  "/passwords/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const decoded = (req as any).user;
+    const passwordId = req.params.id;
+    const encryptionKey = Buffer.from(decoded.encryptionKey, "hex");
+    const result = await pool.query(
+      `
+    SELECT * FROM vault_items
+    WHERE id = $1 AND user_id = $2
+    `,
+      [passwordId, decoded.userId],
+    );
+    const item = result.rows[0];
+    if (!item) {
+      return res.status(404).json("Password not found");
+    }
+    const password = decrypt(
+      item.encrypted_password,
+      encryptionKey,
+      item.iv,
+      item.auth_tag,
+    );
+    res.json({
+      passwordItem: {
+        id: item.id,
+        website: item.website,
+        username: item.username,
+        notes: item.notes,
+        createdAt: item.created_at,
+      },
+      decryptedPassword: password,
+    });
+  },
+);
+
+app.put(
+  "/passwords/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const decoded = (req as any).user;
+    const passwordId = req.params.id;
+    const encryptionKey = Buffer.from(decoded.encryptionKey, "hex");
+    const { website, username, password, notes } = req.body;
+    const result = await pool.query(
+      `
+    SELECT * FROM vault_items
+    WHERE id = $1 AND user_id = $2
+    `,
+      [passwordId, decoded.userId],
+    );
+    const item = result.rows[0];
+    if (!item) {
+      return res.status(404).json("Password not found");
+    }
+    let encrypted, iv, authTag;
+    if (password) {
+      const encryptResult = encrypt(password, encryptionKey);
+      encrypted = encryptResult.encrypted;
+      iv = encryptResult.iv;
+      authTag = encryptResult.authTag;
+    } else {
+      encrypted = item.encrypted_password;
+      iv = item.iv;
+      authTag = item.auth_tag;
+    }
+    const updateResult = await pool.query(
+      `
+      UPDATE vault_items
+      SET
+        website = $1,
+        username = $2,
+        encrypted_password = $3,
+        iv = $4,
+        auth_tag = $5,
+        notes = $6,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7 AND user_id = $8
+      RETURNING *
+      `,
+      [
+        website || item.website,
+        username || item.username,
+        encrypted,
+        iv,
+        authTag,
+        notes !== undefined ? notes : item.notes,
+        passwordId,
+        decoded.userId,
+      ],
+    );
+    const updatedItem = updateResult.rows[0];
+
+    if (!updatedItem) {
+      return res.status(404).json({ error: "Password not found" });
+    }
+    res.json({
+      message: "Password updated successfully",
+      passwordItem: {
+        id: updatedItem.id,
+        website: updatedItem.website,
+        username: updatedItem.username,
+        notes: updatedItem.notes,
+        createdAt: updatedItem.created_at,
+        updatedAt: updatedItem.updated_at,
+      },
+    });
+  },
+);
+app.delete(
+  "/passwords/:id",
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    const decoded = (req as any).user;
+    const passwordId = req.params.id;
+    const result = await pool.query(
+      `
+    DELETE FROM vault_items
+    WHERE id = $1 AND user_id = $2
+    `,
+      [passwordId, decoded.userId],
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Password not found" });
+    }
+    res.json({
+      message: "Password deleted successfully",
+    });
+  },
+);
 
 // ============ Protected Routes ============
 
@@ -226,9 +376,6 @@ app.get("/me", authenticateToken, async (req: Request, res: Response) => {
   ]);
   const user = result.rows[0];
 
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
   if (!user) {
     return res.status(404).json({ error: "User not found" });
   }
