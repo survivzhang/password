@@ -64,7 +64,7 @@ temp/
 *.sqlite
 *.sqlite3
 
-# Security & Credentials (critical for password manager project)
+# Security & Credentials (critical for secureault project)
 *.pem
 *.key
 *.cert
@@ -85,18 +85,22 @@ config/local.json
 # Yarn Integrity file
 .yarn-integrity
 
+# dotenv environment variable files
+.env
+.env.test
+.env.production
+
 # parcel-bundler cache
 .cache
 .parcel-cache
 
-# Frontend specific (Vite)
-# Frontend dist is typically built for deployment
-password-manager-frontend/dist/
-password-manager-frontend/.vite/
+# Next.js build output (if applicable)
+.next
+out
 
-# Backend specific
-secureault/dist/
-secureault/build/
+# Nuxt.js build / generate output (if applicable)
+.nuxt
+dist
 
 # Misc
 .cache/
