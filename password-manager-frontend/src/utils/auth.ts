@@ -12,6 +12,6 @@ export const authUtils = {
     return !!authUtils.getToken();
   },
   logout: (): void => {
-    authUtils.removeToken;
+    authUtils.removeToken();
   },
 };
