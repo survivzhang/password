@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
 import jwt from "jsonwebtoken";
 import { PasswordHasher } from "./utils/crypto";
 import pool from "./db";
@@ -9,6 +10,7 @@ const PORT = 3000;
 const JWT_SECRET = "this-is-the-secure-key-for-test";
 
 // ============ Middleware ============
+app.use(cors());            // 允许前端(5173)跨域调用后端(3000)
 app.use(express.json());
 
 function authenticateToken(req: Request, res: Response, next: NextFunction) {

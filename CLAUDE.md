@@ -68,3 +68,23 @@ PostgreSQL must be running locally on port 5432 with database `securevault`.
 ### Database Schema
 - **`users`**: `id`, `email` (UNIQUE), `master_password_hash`, `created_at`
 - **`vault_items`**: `id`, `user_id` (FK), `website`, `username`, `encrypted_password`, `iv`, `auth_tag`, `notes`, `created_at`, `updated_at`
+
+---
+
+## Working Context (synced from memory)
+
+### Learning Plan
+This repo doubles as a junior-dev learning project — see `LEARNING_PLAN.md` (28-day plan). The owner (Zichen) is working through it for portfolio + interview prep.
+
+**Teaching style (important):** When helping with a plan day, **guide — do not write the learner's code.** Explain *why* at each step, give skeletons with `// TODO` markers, and let them type it. Match their style: Chinese inline comments (e.g. `// 你的代码`), functional components, the patterns in `Login.tsx` / `Button.tsx`. Tie lessons back to the plan's interview questions.
+
+**Progress (as of 2026-06-21):**
+- ✅ Backend Weeks 1–2 (login, JWT, pg pool, bcrypt, AES encryption, full passwords CRUD), Day 15 React basics, Day 16 `useState`.
+- 🔨 Current: Day 17 — building `Dashboard.tsx` (hardcoded list first, then `useEffect` + `passwordAPI.getAll()` swap). Next: Day 18 routing so login navigates to `/dashboard`.
+- ⬜ Not done: Day 17b (loading/empty/delete), Day 18 protected routes, Day 20 `Register.tsx` (empty stub), plus skipped backend items — CORS (Day 13), helmet/rate-limit (Day 13b), global error middleware (Day 22), `.env` (Day 26), tests (Day 27).
+
+### Local Dev Setup
+- **PostgreSQL:** `brew services start postgresql@18` (binaries: `/opt/homebrew/opt/postgresql@18/bin`). DB `securevault` with tables `users`, `vault_items` already exist.
+- **Start order:** postgres → `cd secureault && npm run dev` (:3000) → `cd password-manager-frontend && npm run dev` (:5173).
+- **Test account (LOCAL TEST DATA only — not a real secret):** `test@test.com` / `TestPassword123!` (user id 1).
+- **⚠️ Port 3000 conflict:** The owner's Coursebox work app (Next.js `next-server`) also uses port 3000 — same as the SecureVault backend and the frontend `api.ts` baseURL. If a `curl localhost:3000` returns a Coursebox 404 page, the wrong server has the port. Resolve by stopping one or moving SecureVault to another port — confirm with the owner first.
