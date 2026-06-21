@@ -593,6 +593,10 @@ Build a controlled form with client-side validation.
 
 ## Day 21 — Tailwind CSS
 
+> 🎨 **What follows (Days 21b–21f) is a hands-on CSS/React design mini-track** — make Login &
+> Dashboard actually look professional. Do one short lesson per day. The single biggest secret
+> of good UI: **consistent spacing + alignment** (not fancy colors). Master that first.
+
 ### 🎯 Goal
 Style components without writing CSS files.
 
@@ -616,6 +620,118 @@ Style components without writing CSS files.
 2. What is the box model? (content, padding, border, margin)
 3. What does `position: absolute` do? `relative`? `fixed`?
 4. Difference between `display: none` and `visibility: hidden`?
+
+---
+
+## Day 21b — Spacing & Rhythm (the #1 design skill)
+
+### 🎯 Goal
+Make a cramped form breathe by controlling vertical spacing.
+
+### 📚 Learn
+- **Box model recap:** `margin` (space *outside*), `padding` (space *inside*), `border`, `content`.
+- **Tailwind spacing scale:** `p-4`, `mt-6`, etc. The number = `0.25rem` steps (`4` = `1rem` = 16px). Always use the scale — never random pixel values — so spacing stays consistent.
+- **`space-y-*` / `space-x-*`:** adds even spacing *between* a container's direct children. `space-y-4` = 1rem gap between each stacked child. Cleanest way to space a form.
+- **Proximity principle:** related things sit *close* (small gap), unrelated things sit *far* (big gap). Gaps communicate grouping.
+
+### 💻 Do (on `Login.tsx`)
+- Delete the empty `<h3>` tags. Wrap the email input, password input, and button in one `<div className="space-y-4">` — watch the even gaps appear.
+- Under the "Login" title, use `mt-1` (close to the title — same group) and `mb-6` (far from the form — different group). Feel how proximity creates grouping.
+
+### ❓ Interview Questions
+1. What is the box model? Difference between `margin` and `padding`?
+2. Why use a spacing *scale* instead of arbitrary pixel values?
+3. What does `space-y-4` do?
+
+---
+
+## Day 21c — Reusable Components with Props (React + CSS)
+
+### 🎯 Goal
+Add a `fullWidth` option to `Button` so the same component works in different layouts.
+
+### 📚 Learn
+- A good component is **configurable via props**, not hardcoded. A login button wants `w-full`; a "Delete" button in a list does not. Don't bake the width in — let the caller decide.
+- **Conditional class names:** build the `className` string from pieces, toggling classes with a ternary: `const widthStyle = fullWidth ? 'w-full' : ''`.
+- This is the bridge between React (props/logic) and CSS (the classes those props turn on).
+
+### 💻 Do (on `components/UI/Button.tsx`)
+1. Add `fullWidth?: boolean` to `ButtonProps`.
+2. Default it: `fullWidth = false` in the destructure.
+3. Build the class: `const widthStyle = fullWidth ? 'w-full' : '';` and append it to the final `className`.
+4. Use it: `<Button onClick={handleLogin} fullWidth>Login</Button>` (a bare prop = `true`).
+
+### ❓ Interview Questions
+1. Why pass `fullWidth` as a prop instead of hardcoding `w-full` in the Button?
+2. What does a bare boolean prop (`<Button fullWidth>`) evaluate to?
+3. How do you conditionally apply CSS classes in React?
+
+---
+
+## Day 21d — Visual Hierarchy (guide the eye)
+
+### 🎯 Goal
+Use size, weight, and color to create a clear reading order — not "make the title huge".
+
+### 📚 Learn
+- **Hierarchy tools:** font **size** (`text-2xl`), font **weight** (`font-bold`), and **color** (`text-gray-800` primary, `text-gray-500` secondary). Combine them — don't rely on size alone.
+- A title + a muted subtitle reads better than one giant heading.
+- **Contrast for accessibility:** body text needs enough contrast (WCAG AA ≈ 4.5:1). Very light gray on white fails — keep secondary text at `gray-500`+.
+
+### 💻 Do (on `Login.tsx`)
+- Title: `text-2xl font-bold text-gray-800`.
+- Subtitle below it: `text-sm text-gray-500` — e.g. "Welcome back to SecureVault".
+- Step back: does your eye hit title → subtitle → form, in order? That's hierarchy working.
+
+### ❓ Interview Questions
+1. What are the main tools for creating visual hierarchy?
+2. Why is color contrast an accessibility concern? What is WCAG AA?
+3. `rem` vs `px` for font sizes — why might `rem` be preferred?
+
+---
+
+## Day 21e — Dashboard Cards & Layout
+
+### 🎯 Goal
+Turn the bare vault list into clean, scannable cards.
+
+### 📚 Learn
+- **Card pattern:** `bg-white p-4 rounded-lg shadow` — groups related info and separates rows.
+- **Flexbox for rows:** website/username on the left, action buttons (View/Delete) on the right, via `flex items-center justify-between`.
+- **List spacing & width:** `space-y-3` between cards; a centered, capped container (`max-w-2xl mx-auto`) so it doesn't stretch edge-to-edge on wide screens.
+
+### 💻 Do (on `pages/Dashboard.tsx`)
+- Wrap content in `<div className="max-w-2xl mx-auto">` (centered, readable width).
+- Make each `.map()` row a card: `bg-white p-4 rounded-lg shadow`.
+- Inside each card use `flex items-center justify-between` to push buttons right.
+- Add `space-y-3` on the list container for even gaps.
+
+### ❓ Interview Questions
+1. Flexbox vs Grid — when to use each?
+2. What does `justify-between` do vs `justify-center`?
+3. Why cap content width with `max-w-*` instead of filling the screen?
+
+---
+
+## Day 21f — Responsive & Accessible
+
+### 🎯 Goal
+Make it work on mobile and usable for everyone.
+
+### 📚 Learn
+- **Mobile-first responsive:** Tailwind classes apply from small screens up; `md:` / `lg:` override at larger widths. e.g. `grid-cols-1 md:grid-cols-2` = 1 column on phone, 2 on desktop.
+- **Accessibility basics:** real `<button>` (not `<div onClick>`); `aria-label` on icon-only buttons; visible focus rings (`focus:ring-2`); enough contrast.
+- Run **Lighthouse** (Chrome DevTools → Lighthouse), aim for accessibility ≥ 90.
+
+### 💻 Do
+- Make the Dashboard list responsive: 1 column on mobile, 2 on desktop.
+- Give every action button an `aria-label` (e.g. `aria-label="Delete entry for github.com"`).
+- Run a Lighthouse accessibility audit; fix what it flags.
+
+### ❓ Interview Questions
+1. What does "mobile-first" mean in CSS?
+2. Why use a semantic `<button>` instead of a clickable `<div>`?
+3. Name three things that improve web accessibility.
 
 ---
 

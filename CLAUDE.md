@@ -78,10 +78,11 @@ This repo doubles as a junior-dev learning project — see `LEARNING_PLAN.md` (2
 
 **Teaching style (important):** When helping with a plan day, **guide — do not write the learner's code.** Explain *why* at each step, give skeletons with `// TODO` markers, and let them type it. Match their style: Chinese inline comments (e.g. `// 你的代码`), functional components, the patterns in `Login.tsx` / `Button.tsx`. Tie lessons back to the plan's interview questions.
 
+**📓 Progress journal — READ THIS FIRST each session:** `doc/PROGRESS_LOG.md` is a one-line-per-day index linking to per-day detail files `doc/day-NN.md`. Read the index, then open the latest `day-NN.md` to resume exactly where the learner left off. After finishing a day, write a new `doc/day-NN.md` and add its one-line row to the top of the index. (This is separate from `LEARNING_PLAN.md`, which is the curriculum. Design lessons live in the plan as Days 21b–21f.)
+
 **Progress (as of 2026-06-21):**
-- ✅ Backend Weeks 1–2 (login, JWT, pg pool, bcrypt, AES encryption, full passwords CRUD), Day 15 React basics, Day 16 `useState`.
-- 🔨 Current: Day 17 — building `Dashboard.tsx` (hardcoded list first, then `useEffect` + `passwordAPI.getAll()` swap). Next: Day 18 routing so login navigates to `/dashboard`.
-- ⬜ Not done: Day 17b (loading/empty/delete), Day 18 protected routes, Day 20 `Register.tsx` (empty stub), plus skipped backend items — CORS (Day 13), helmet/rate-limit (Day 13b), global error middleware (Day 22), `.env` (Day 26), tests (Day 27).
+- ✅ Backend Weeks 1–2 (login, JWT, pg pool, bcrypt, AES encryption, full passwords CRUD), Day 15 React basics, Day 16 `useState`, Day 17 (Dashboard fetch), Day 18 (routing — `useNavigate` to `/dashboard`), Day 13 (CORS). Login works end-to-end (browser-verified).
+- ⬜ Not done: Day 17b (loading/empty/delete + View), Day 19 (Axios 401 redirect), Day 20 `Register.tsx` (empty stub), Day 21+ (Tailwind + design 21b–21f), plus skipped backend items — helmet/rate-limit (Day 13b), global error middleware (Day 22), `.env` (Day 26), tests (Day 27).
 
 ### Local Dev Setup
 - **PostgreSQL:** `brew services start postgresql@18` (binaries: `/opt/homebrew/opt/postgresql@18/bin`). DB `securevault` with tables `users`, `vault_items` already exist.

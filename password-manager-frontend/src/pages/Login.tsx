@@ -3,12 +3,14 @@ import Input from '../components/UI/Input';
 import Button from '../components/UI/Button';
 import { authAPI } from '../services/api';
 import { authUtils } from '../utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   // 你的代码：创建 3 个状态
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
   
   const handleLogin = async () => {
     try {
@@ -21,6 +23,7 @@ function Login() {
 
       const response = await authAPI.login(email, password);
       authUtils.setToken(response.token);
+      navigate('/dashboard');
       alert('Login successful!');
     } catch (err: any) {
       // 你的代码：显示错误
